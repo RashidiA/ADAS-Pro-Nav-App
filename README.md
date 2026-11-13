@@ -1,6 +1,6 @@
 # 🚗 ADAS Pro + Navigation
 
-A phone-camera **driver-assistance demo** that runs entirely in the browser. It combines camera-based ADAS warnings with GPS speed and the **map speed limit** of the road you are on.
+A phone-camera **driver-assistance demo** that runs in the browser. It combines camera-based ADAS warnings with GPS speed, the **map speed limit**, and **turn-by-turn navigation** with voice, a next-turn arrow, a mini-map, lane hints and a **mirrored HUD** mode.
 
 🌐 **Live app:** [https://rashidia.github.io/ADAS-Pro-Nav-App/](https://rashidia.github.io/ADAS-Pro-Nav-App/)
 
@@ -19,7 +19,14 @@ A phone-camera **driver-assistance demo** that runs entirely in the browser. It 
 | **GPS speed** | Shown on screen. Lane warnings are muted at low speed. |
 | **🆕 Map speed limit** | Your position is matched to the nearest road in [OpenStreetMap](https://www.openstreetmap.org/) and its `maxspeed` is shown on a speed-limit sign badge with the road name. |
 | **🆕 Over-speed warning** | A warning appears after 2 seconds above the limit plus a margin (default 5 km/h). A fresh camera-read sign overrides the map for 20 seconds. If the sign and the map disagree by 20 km/h or more, the app says "check". |
-| **Settings (⚙)** | Sound, vibration, map limit on or off, over-speed margin, horizon, bonnet cut-off and camera field of view. Saved in the browser. |
+| **🆕 Route search and navigation (🧭 Route)** | Type a place or address, pick a result, and the app builds a driving route from your GPS position. Search uses OpenStreetMap Nominatim and routes use the OSRM demo server. |
+| **🆕 Voice guidance** | Spoken instructions at about 600 m, 250 m and at the turn, in **English or Bahasa Melayu**. Quality depends on the voices installed on the phone. |
+| **🆕 Next-turn arrow** | A large arrow, the distance to the turn, the instruction and the distance remaining. It fades while a collision or lane warning is active, so warnings stay clear. |
+| **🆕 Automatic rerouting** | If you stay more than 40 m off the route for about 6 seconds, the app says "Rerouting" and finds a new route. |
+| **🆕 Mini-map** | A round heading-up map with your route, the next turn and your position. Tap it to change the zoom. |
+| **🆕 Lane guidance** | "Keep in the left or right lane" before a turn, plus lane arrows with the valid lanes highlighted when the map has lane data for that junction. |
+| **🆕 Mirrored HUD mode** | Big speed, speed limit, turn arrow, distance and warnings on a black screen, mirrored so they reflect on the windscreen when the phone lies flat on the dashboard. Detection keeps running. Tap **Exit HUD** to return. |
+| **Settings (⚙)** | Voice and language, mini-map, map limit on or off, sound, vibration, over-speed margin, horizon, bonnet cut-off and camera field of view. Saved in the browser. |
 
 Alerts have priorities, so a collision warning always takes the banner before a lane or over-speed message.
 
@@ -31,7 +38,9 @@ Alerts have priorities, so a collision warning always takes the banner before a 
 2. Tap **START ADAS** and allow **camera** and **location**.
 3. Mount the phone at the centre of the windscreen with the camera level with the road.
 4. Use **Set centre** to calibrate the lane position and **Lane change** to mute lane warnings when you change lanes on purpose.
-5. Open **⚙** to adjust settings.
+5. Tap **🧭 Route**, type a destination, tap a result, and follow the arrow and voice. Set the destination before you drive off.
+6. Tap **HUD** to switch to the mirrored dashboard display, and **Exit HUD** to come back.
+7. Open **⚙** to adjust settings, including the voice language.
 
 Tips:
 * The AI model and TensorFlow.js load from the internet the first time, so the first start takes a few seconds.
@@ -50,6 +59,18 @@ Tips:
 
 ---
 
+## 🧭 About navigation
+
+* **Services:** the free public [Nominatim](https://nominatim.org/) search and the [OSRM](https://project-osrm.org/) demo routing server. Both are fair-use services with **no guarantee**. For heavy or commercial use, host your own or use a paid provider.
+* **Privacy:** your approximate position and the destination text are sent to these servers when you search, route or reroute, and to Overpass for the speed limit. Nothing is stored by this app except your settings in the browser.
+* **Route quality:** routes come from OpenStreetMap, so one-way streets, turn restrictions and new roads can be wrong or missing. Use your own judgement and obey road signs.
+* **No live traffic:** routes do not account for jams or closures.
+* **Lane data** is only available where mappers have tagged turn lanes. Otherwise only the "keep left or right" hint is shown.
+* **Mini-map:** drawn by the app without map tiles, so it shows the route only, not streets around it.
+* **Phone in HUD mode:** place it flat, screen up, in a non-slip holder where it does not block your view or the airbag area. Brightness and reflection depend on the windscreen and sunlight, so test while parked.
+
+---
+
 ## 🧠 How it works (short version)
 
 * **Detection:** coco-ssd (lite MobileNet v2) runs about 15 times per second on a small 320 px image.
@@ -63,7 +84,7 @@ Tips:
 ## 📂 Files
 
 ```text
-├── index.html   # The whole app: page, styles, detection, lane, GPS and map-limit code
+├── index.html   # The whole app: page, styles, detection, lane, GPS, map limit, navigation and HUD
 └── README.md    # This file
 ```
 
@@ -81,10 +102,11 @@ No build step. To run locally, serve the folder over HTTPS or on `localhost` (ca
 
 ## 🛣️ Roadmap
 
-1. ✅ Camera ADAS + GPS speed + map speed limit (this version)
-2. ⬜ Route search, voice instructions and a next-turn arrow as a HUD
-3. ⬜ Mirrored HUD mode, mini-map and lane guidance
+1. ✅ Camera ADAS + GPS speed + map speed limit
+2. ✅ Route search, voice instructions and a next-turn arrow
+3. ✅ Mirrored HUD mode, mini-map and lane guidance (this version)
 4. ⬜ Custom speed-limit sign model for Malaysian road signs
+5. ⬜ Map tiles in the mini-map, offline routes, and a speed-camera or school-zone warning from map data
 
 ---
 
@@ -98,14 +120,14 @@ No build step. To run locally, serve the folder over HTTPS or on `localhost` (ca
 
 ## ⚠️ Disclaimer
 
-This is a simplified teaching demo. Detection can miss or misjudge objects, distances are estimates, and map speed limits can be missing or out of date. Results are **not** for real driving decisions, safety certification or any commercial use. Always obey the posted speed limit and traffic rules.
+This is a simplified teaching demo. Detection can miss or misjudge objects, distances are estimates, and map speed limits, routes and lane data can be missing, wrong or out of date. Set your destination before driving and never operate the phone while the vehicle is moving. Results are **not** for real driving decisions, safety certification or any commercial use. Always obey the posted speed limit and traffic rules.
 
 ---
 
 ## 🧩 Credits
 
 * [TensorFlow.js](https://www.tensorflow.org/js) and the coco-ssd model.
-* Map data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), available under the ODbL, served through the [Overpass API](https://overpass-api.de/).
+* Map data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright), available under the ODbL, served through the [Overpass API](https://overpass-api.de/), [Nominatim](https://nominatim.org/) and [OSRM](https://project-osrm.org/).
 
 ## 👤 Author
 
