@@ -20,6 +20,40 @@
   #start{position:absolute;inset:0;background:rgba(0,0,0,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:50;color:#ddd;text-align:center;padding:18px}
   #startBtn{padding:16px 34px;font-size:19px;border-radius:10px;background:#28a745;color:#fff;border:none;cursor:pointer}
   #status{font-size:14px;max-width:520px;line-height:1.4}
+  #btns{flex-wrap:wrap;justify-content:flex-end;max-width:62%}
+  #navPanel{position:absolute;top:46px;left:8px;z-index:20;display:none;gap:10px;align-items:center;background:rgba(0,0,0,.72);border:1px solid rgba(124,252,0,.6);border-radius:14px;padding:8px 12px;max-width:62%;color:#fff;transition:opacity .2s}
+  #navPanel.dim{opacity:.22}
+  #nvArrow{width:54px;height:54px;flex:none}
+  #nvDist{font:800 26px system-ui;color:#7CFC00;line-height:1}
+  #nvText{font:600 13px system-ui;line-height:1.25;margin-top:2px}
+  #nvRem{font:12px system-ui;color:#9fb0c8;margin-top:2px}
+  #nvLane{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px}
+  .keep{font:700 12px system-ui;color:#ffd32a}
+  .lanes{display:inline-flex;gap:3px}
+  .ln{min-width:22px;text-align:center;font:700 15px system-ui;padding:1px 4px;border-radius:5px;border:1px solid #556;color:#778;background:#1b222c}
+  .ln.ok{color:#fff;background:#1b7f3b;border-color:#7CFC00}
+  #miniWrap{position:absolute;right:10px;bottom:112px;z-index:15;display:none}
+  #mini{width:128px;height:128px;border-radius:50%;display:block;cursor:pointer}
+  #navDlg{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:45;width:min(92%,460px);max-height:82%;overflow:auto;background:rgba(10,14,20,.97);border:1px solid #567;border-radius:14px;padding:14px;color:#ddd;font:14px system-ui;display:none}
+  #navDlg input{width:100%;padding:10px;border-radius:9px;border:1px solid #567;background:#0b0f14;color:#fff;font:15px system-ui;box-sizing:border-box}
+  #navDlg button{padding:9px 12px;border-radius:9px;border:1px solid #678;background:#1b2635;color:#fff;font:600 13px system-ui;cursor:pointer}
+  #navRes{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+  #navRes button{text-align:left;font-weight:500}
+  #navStatus{margin:8px 0;font-size:13px;color:#9fb0c8}
+  .row{display:flex;gap:8px;margin-top:8px}
+  #hudLayer{position:absolute;inset:0;background:#000;z-index:30;display:none}
+  #hudIn{position:absolute;inset:0;transform:scaleX(-1);color:#7CFC00;font-family:system-ui,sans-serif}
+  #hArrow{position:absolute;left:50%;top:14%;width:34%;max-width:260px;aspect-ratio:1;transform:translateX(-50%)}
+  #hDist{position:absolute;left:0;right:0;top:calc(14% + min(34vw,260px) + 4px);text-align:center;font:800 min(11vw,84px) system-ui}
+  #hStreet{position:absolute;left:4%;right:4%;top:calc(14% + min(34vw,260px) + min(12vw,92px) + 6px);text-align:center;font:600 min(4.6vw,30px) system-ui;color:#cfe}
+  .hSpeed{position:absolute;left:5%;bottom:6%;font:800 min(17vw,130px) system-ui;line-height:1}
+  .hSpeed span{font-size:.18em;margin-left:.2em;color:#9fb0c8}
+  .hLim{position:absolute;right:5%;bottom:6%;width:min(22vw,150px);aspect-ratio:1;border-radius:50%;background:#fff;border:.1em solid #d00000;color:#111;font:800 min(8vw,56px) system-ui;display:flex;align-items:center;justify-content:center;box-sizing:border-box}
+  .hLim.over{animation:blink .35s infinite alternate}
+  #hAlert{position:absolute;left:4%;right:4%;top:3%;padding:8px 12px;border-radius:12px;text-align:center;font:800 min(6vw,40px) system-ui;color:#fff;display:none}
+  #hAlert.l1{background:#e69f00}#hAlert.l2{background:#e5481f}#hAlert.l3{background:#d00000}
+  #hudExit{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);z-index:35;display:none;padding:8px 16px;border-radius:10px;border:1px solid #567;background:#111;color:#9ab;font:600 13px system-ui;cursor:pointer}
+  @media(max-width:600px){#navPanel{top:84px;max-width:72%;padding:6px 9px}#nvArrow{width:42px;height:42px}#nvDist{font-size:21px}#nvText{font-size:12px}#mini{width:96px;height:96px}#miniWrap{bottom:104px}}
   #banner{top:46px !important}
   #limitBox{position:absolute;bottom:52px;left:10px;display:flex;align-items:center;gap:8px;max-width:70%}
   #limitSign{flex:none;width:44px;height:44px;border-radius:50%;background:#fff;border:5px solid #d00000;color:#111;font:800 17px system-ui;display:flex;align-items:center;justify-content:center}
@@ -40,8 +74,15 @@
   <div id="banner"></div>
   <div class="chip" id="limitBox"><div id="limitSign" class="none">--</div><div id="roadName">Map limit: waiting for GPS</div></div>
   <div class="chip" id="speedBox">SPEED <span id="speedVal">--</span> km/h</div>
-  <div id="btns"><button id="btnMute">&#8596; Lane change</button><button id="btnCal">&#8982; Set centre</button><button id="btnCfg">&#9881;</button><button id="btnFs">&#9974;</button></div>
+  <div id="btns"><button id="btnMute">&#8596; Lane change</button><button id="btnCal">&#8982; Set centre</button><button id="btnNav">&#129517; Route</button><button id="btnHud">HUD</button><button id="btnCfg">&#9881;</button><button id="btnFs">&#9974;</button></div>
+  <div id="navPanel"><div id="nvArrow"></div><div><div id="nvDist">--</div><div id="nvText"></div><div id="nvLane"></div><div id="nvRem"></div></div></div>
+  <div id="miniWrap"><canvas id="mini" width="256" height="256"></canvas></div>
+  <div id="navDlg"><b>Navigation</b><div style="margin:8px 0"><input id="navQ" type="search" placeholder="Search destination (place or address)" autocomplete="off"></div><div class="row"><button id="navGo">Search</button><button id="navStop">Stop navigation</button><button id="navClose">Close</button></div><div id="navStatus">Start ADAS first so the app has your GPS position.</div><div id="navRes"></div><small style="color:#789">Search: OpenStreetMap Nominatim. Routes: OSRM demo server (free, no guarantee). Driver assistance only.</small></div>
+  <div id="hudLayer"><div id="hudIn"><div id="hAlert"></div><div id="hArrow"></div><div id="hDist"></div><div id="hStreet"></div><div class="hSpeed"><span id="hSpv"></span><b id="hSp">--</b><span>km/h</span></div><div class="hLim" id="hLim">--</div></div></div><button id="hudExit">Exit HUD</button>
   <div id="cfgPanel"><b>Settings</b>
+    <label>Voice guidance <input type="checkbox" data-k="voice"></label>
+    <label>Language <select data-k="lang"><option value="en">English</option><option value="bm">Bahasa Melayu</option></select></label>
+    <label>Mini-map <input type="checkbox" data-k="miniMap"></label>
     <label>Sound <input type="checkbox" data-k="sound"></label>
     <label>Vibration <input type="checkbox" data-k="vibrate"></label>
     <label>Map speed limit <input type="checkbox" data-k="mapLimit"></label>
@@ -56,7 +97,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
 <script>
-const CFG = Object.assign({"useLane": true, "useVeh": true, "usePed": true, "useSign": true, "useAni": true, "signModelUrl": "", "sound": true, "vibrate": true, "laneThr": 0.35, "laneMinKmh": 15, "unknownMoving": true, "ttc": 2.5, "minDist": 8, "detW": 320, "detFps": 15, "camW": 640, "base": "lite_mobilenet_v2", "horizon": 0.5, "hood": 0.92, "fov": 68, "minScore": 0.45, "laneEvery": 2, "overMargin": 5, "mapLimit": true}, (() => { try { return JSON.parse(localStorage.getItem("adaspro.cfg") || "{}"); } catch (e) { return {}; } })());
+const CFG = Object.assign({"useLane": true, "useVeh": true, "usePed": true, "useSign": true, "useAni": true, "signModelUrl": "", "sound": true, "vibrate": true, "laneThr": 0.35, "laneMinKmh": 15, "unknownMoving": true, "ttc": 2.5, "minDist": 8, "detW": 320, "detFps": 15, "camW": 640, "base": "lite_mobilenet_v2", "horizon": 0.5, "hood": 0.92, "fov": 68, "minScore": 0.45, "laneEvery": 2, "overMargin": 5, "mapLimit": true, "voice": true, "lang": "en", "miniMap": true}, (() => { try { return JSON.parse(localStorage.getItem("adaspro.cfg") || "{}"); } catch (e) { return {}; } })());
 const $ = id => document.getElementById(id);
 const video = $('v'), ov = $('ov'), octx = ov.getContext('2d');
 
@@ -500,13 +541,198 @@ function startGps() {
 /* settings panel */
 (function () {
   const P = $('cfgPanel'); $('btnCfg').onclick = () => { P.style.display = P.style.display === 'block' ? 'none' : 'block'; };
+  const getV = el => el.type === 'checkbox' ? el.checked : el.tagName === 'SELECT' ? el.value : (+el.value) / (+(el.dataset.s || 1));
+  const save = () => { try { const o = {}; P.querySelectorAll('[data-k]').forEach(e => { o[e.dataset.k] = getV(e); }); localStorage.setItem('adaspro.cfg', JSON.stringify(o)); } catch (e) {} };
   P.querySelectorAll('[data-k]').forEach(el => {
     const k = el.dataset.k, sc = +(el.dataset.s || 1);
-    if (el.type === 'checkbox') el.checked = !!CFG[k]; else el.value = CFG[k] * sc;
-    const upd = () => { $('omv').textContent = CFG.overMargin + ' km/h'; };
-    el.oninput = () => { CFG[k] = el.type === 'checkbox' ? el.checked : (+el.value) / sc; upd(); try { const o = {}; P.querySelectorAll('[data-k]').forEach(e => { const kk = e.dataset.k, s2 = +(e.dataset.s || 1); o[kk] = e.type === 'checkbox' ? e.checked : (+e.value) / s2; }); localStorage.setItem('adaspro.cfg', JSON.stringify(o)); } catch (e) {} if (k === 'mapLimit') { MAP.fetchedAt = 0; showLimit(); } };
-    upd();
+    if (el.type === 'checkbox') el.checked = !!CFG[k]; else if (el.tagName === 'SELECT') el.value = CFG[k]; else el.value = CFG[k] * sc;
+    el.oninput = () => { CFG[k] = getV(el); $('omv').textContent = CFG.overMargin + ' km/h'; save();
+      if (k === 'mapLimit') { MAP.fetchedAt = 0; showLimit(); }
+      if (k === 'miniMap' && typeof NAV !== 'undefined') $('miniWrap').style.display = (CFG.miniMap && NAV.active) ? 'block' : 'none'; };
   });
+  $('omv').textContent = CFG.overMargin + ' km/h';
+})();
+
+/* ------------------------------------------------------------------ NAVIGATION LAYER (steps 2+3): search, route, voice, turn arrow, mini-map, lane hints, mirrored HUD */
+const NAV = {dest: null, active: false, pts: [], cum: [], total: 0, steps: [], stepS: [], s: 0, off: 0, offSince: 0, lastRoute: 0, lastIdx: 0, spoken: {}, arrived: false, nextJ: 1, busy: false};
+const T = {
+  en: {left: 'left', right: 'right', 'slight left': 'slight left', 'slight right': 'slight right', 'sharp left': 'sharp left', 'sharp right': 'sharp right', straight: 'straight', uturn: 'U-turn'},
+  bm: {left: 'kiri', right: 'kanan', 'slight left': 'serong kiri', 'slight right': 'serong kanan', 'sharp left': 'tajam ke kiri', 'sharp right': 'tajam ke kanan', straight: 'lurus', uturn: 'pusingan U'}
+};
+const L = () => CFG.lang === 'bm' ? 'bm' : 'en';
+function instr(st) {
+  const m = st.maneuver, ty = m.type, md = m.modifier || 'straight', nm = st.name ? ' ' + (L() === 'bm' ? 'ke ' : 'onto ') + st.name : '', bm = L() === 'bm', w = T[L()][md] || md;
+  if (ty === 'arrive') return bm ? 'Anda telah sampai ke destinasi' + (md === 'left' ? ', di sebelah kiri' : md === 'right' ? ', di sebelah kanan' : '') : 'You have arrived at your destination' + (md === 'left' ? ', on your left' : md === 'right' ? ', on your right' : '');
+  if (ty === 'roundabout' || ty === 'rotary' || ty === 'roundabout turn') return bm ? 'Di bulatan, ambil simpang keluar ke-' + (m.exit || '') + nm : 'At the roundabout, take exit ' + (m.exit || '') + nm;
+  if (md === 'uturn') return bm ? 'Buat pusingan U' : 'Make a U-turn';
+  if (ty === 'fork') return bm ? 'Ikut ' + (md.includes('left') ? 'kiri' : 'kanan') + ' di simpang bercabang' + nm : 'Keep ' + (md.includes('left') ? 'left' : 'right') + ' at the fork' + nm;
+  if (ty === 'on ramp') return bm ? 'Masuk jalan susur ' + w + nm : 'Take the ramp on the ' + w + nm;
+  if (ty === 'off ramp') return bm ? 'Ambil susur keluar ' + w + nm : 'Take the exit on the ' + w + nm;
+  if (ty === 'merge') return bm ? 'Bergabung ' + w + nm : 'Merge ' + w + nm;
+  if (md === 'straight') return bm ? 'Teruskan lurus' + nm : 'Continue straight' + nm;
+  return bm ? 'Belok ' + w + nm : 'Turn ' + w + nm;
+}
+function distTxt(m, speak) {
+  if (m >= 1000) { const k = (m / 1000).toFixed(m >= 10000 ? 0 : 1); return speak ? k + (L() === 'bm' ? ' kilometer' : ' kilometres') : k + ' km'; }
+  const r = m >= 150 ? Math.round(m / 50) * 50 : Math.round(m / 10) * 10;
+  return speak ? r + (L() === 'bm' ? ' meter' : ' meters') : r + ' m';
+}
+/* ---- voice */
+let voices = [];
+function initVoice() { try { if (!window.speechSynthesis) return; voices = speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = () => { voices = speechSynthesis.getVoices(); }; speechSynthesis.speak(new SpeechSynthesisUtterance('')); } catch (e) {} }
+function say(text) {
+  if (!CFG.voice || !window.speechSynthesis) return;
+  try {
+    const u = new SpeechSynthesisUtterance(text), want = L() === 'bm' ? ['ms', 'id'] : ['en'];
+    let v = null; for (const p of want) { v = voices.find(x => x.lang && x.lang.toLowerCase().startsWith(p)); if (v) break; }
+    u.lang = v ? v.lang : (L() === 'bm' ? 'ms-MY' : 'en-US'); if (v) u.voice = v; u.rate = 1;
+    speechSynthesis.cancel(); speechSynthesis.speak(u);
+  } catch (e) {}
+}
+/* ---- geometry along the route */
+function projSeg(py, px, ay, ax, by, bx) {
+  const k = 111320, cx = Math.cos(py * Math.PI / 180), x1 = (ax - px) * k * cx, y1 = (ay - py) * k, x2 = (bx - px) * k * cx, y2 = (by - py) * k, dx = x2 - x1, dy = y2 - y1, Lq = dx * dx + dy * dy;
+  let t = Lq ? -(x1 * dx + y1 * dy) / Lq : 0; t = Math.max(0, Math.min(1, t)); return {d: Math.hypot(x1 + t * dx, y1 + t * dy), t};
+}
+function nearest(lat, lon, lo, hi) {
+  let best = null; const P = NAV.pts, C = NAV.cum;
+  for (let i = Math.max(0, lo); i < Math.min(P.length - 1, hi); i++) {
+    const q = projSeg(lat, lon, P[i][1], P[i][0], P[i + 1][1], P[i + 1][0]);
+    if (!best || q.d < best.d) best = {d: q.d, i, s: C[i] + q.t * (C[i + 1] - C[i])};
+  }
+  return best || {d: 1e9, i: 0, s: 0};
+}
+/* ---- search + route */
+async function geocode(q) {
+  let u = 'https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&addressdetails=0&q=' + encodeURIComponent(q);
+  if (GPS.lat !== null) u += '&viewbox=' + (GPS.lon - 1.5) + ',' + (GPS.lat + 1.5) + ',' + (GPS.lon + 1.5) + ',' + (GPS.lat - 1.5);
+  const r = await fetch(u, {headers: {'Accept-Language': L() === 'bm' ? 'ms,en' : 'en'}}); if (!r.ok) throw new Error('search HTTP ' + r.status);
+  return (await r.json()).map(x => ({name: x.display_name, lat: +x.lat, lon: +x.lon}));
+}
+async function fetchRoute(toLat, toLon) {
+  const u = 'https://router.project-osrm.org/route/v1/driving/' + GPS.lon.toFixed(6) + ',' + GPS.lat.toFixed(6) + ';' + toLon.toFixed(6) + ',' + toLat.toFixed(6) + '?overview=full&geometries=geojson&steps=true&alternatives=false';
+  const r = await fetch(u); if (!r.ok) throw new Error('route HTTP ' + r.status);
+  const j = await r.json(); if (j.code !== 'Ok' || !j.routes || !j.routes[0]) throw new Error(j.message || j.code || 'no route');
+  return j.routes[0];
+}
+function setRoute(r, quiet) {
+  NAV.pts = r.geometry.coordinates; const n = NAV.pts.length; NAV.cum = new Array(n); NAV.cum[0] = 0;
+  for (let i = 1; i < n; i++) NAV.cum[i] = NAV.cum[i - 1] + hav(NAV.pts[i - 1][1], NAV.pts[i - 1][0], NAV.pts[i][1], NAV.pts[i][0]);
+  NAV.total = NAV.cum[n - 1]; NAV.steps = []; r.legs.forEach(l => l.steps.forEach(s => NAV.steps.push(s)));
+  NAV.stepS = []; let lo = 0;
+  NAV.steps.forEach((st, j) => {
+    if (j === 0) { NAV.stepS[0] = 0; return; }
+    if (j === NAV.steps.length - 1) { NAV.stepS[j] = NAV.total; return; }
+    const m = st.maneuver.location, q = nearest(m[1], m[0], lo, n - 1); NAV.stepS[j] = Math.max(q.s, NAV.stepS[j - 1]); lo = Math.max(0, q.i - 2);
+  });
+  NAV.spoken = {}; NAV.s = 0; NAV.lastIdx = 0; NAV.off = 0; NAV.offSince = 0; NAV.lastRoute = performance.now(); NAV.arrived = false; NAV.active = true; NAV.nextJ = 1;
+  if (!quiet) { const km = (r.distance / 1000).toFixed(1), min = Math.round(r.duration / 60); say(L() === 'bm' ? 'Laluan ditemui. ' + km + ' kilometer, kira-kira ' + min + ' minit.' : 'Route found. ' + km + ' kilometres, about ' + min + ' minutes.'); }
+  $('navPanel').style.display = 'flex'; $('miniWrap').style.display = CFG.miniMap ? 'block' : 'none';
+  navTick();
+}
+async function startRoute(d) {
+  const st = $('navStatus');
+  if (GPS.lat === null) { st.textContent = 'Waiting for a GPS fix. Start ADAS first and allow location.'; return; }
+  NAV.dest = d; st.textContent = 'Finding route...';
+  try { setRoute(await fetchRoute(d.lat, d.lon)); st.textContent = 'Route ready: ' + (NAV.total / 1000).toFixed(1) + ' km. Drive safely.'; $('navDlg').style.display = 'none'; }
+  catch (e) { st.textContent = 'Route failed: ' + e.message; }
+}
+function stopNav() { NAV.active = false; NAV.dest = null; NAV.pts = []; $('navPanel').style.display = 'none'; $('miniWrap').style.display = 'none'; try { speechSynthesis.cancel(); } catch (e) {} $('navStatus').textContent = 'Navigation stopped.'; renderHud(); }
+async function reroute() {
+  if (NAV.busy || !NAV.dest || GPS.lat === null) return; NAV.busy = true; NAV.lastRoute = performance.now();
+  say(L() === 'bm' ? 'Mencari laluan baharu' : 'Rerouting');
+  try { setRoute(await fetchRoute(NAV.dest.lat, NAV.dest.lon), true); } catch (e) { setAlert('nav', 'Reroute failed: ' + e.message, 1, 3000); }
+  NAV.busy = false;
+}
+/* ---- progress along the route (called on every GPS fix and 4x per second) */
+function navUpdate() {
+  if (!NAV.active || GPS.lat === null) return;
+  const n = NAV.pts.length; let r = nearest(GPS.lat, GPS.lon, NAV.lastIdx - 30, NAV.lastIdx + 400);
+  if (r.d > 60) { const f = nearest(GPS.lat, GPS.lon, 0, n - 1); if (f.d < r.d) r = f; }
+  if (r.s >= NAV.s - 30) { NAV.s = r.s; NAV.lastIdx = r.i; }          // never jump far backwards (GPS jitter)
+  NAV.off = r.d; const now = performance.now();
+  if (NAV.off > 40) { if (!NAV.offSince) NAV.offSince = now; else if (now - NAV.offSince > 6000 && now - NAV.lastRoute > 15000) reroute(); } else NAV.offSince = 0;
+  let j = 1; while (j < NAV.steps.length - 1 && NAV.stepS[j] <= NAV.s + 3) j++;
+  NAV.nextJ = j; const dist = Math.max(0, NAV.stepS[j] - NAV.s), v = egoSpeed || 0, st = NAV.steps[j];
+  const far = Math.max(600, v * 35), mid = Math.max(250, v * 14), near = Math.max(50, v * 4), last = j === NAV.steps.length - 1;
+  const tell = (key, txt) => { if (!NAV.spoken[key]) { NAV.spoken[key] = 1; say(txt); } };
+  if (last && NAV.total - NAV.s < 25) { if (!NAV.arrived) { NAV.arrived = true; if (!NAV.spoken[j + 'n']) say(instr(st)); setAlert('nav', instr(st), 0, 6000); NAV.active = false; $('navPanel').style.display = 'none'; $('miniWrap').style.display = 'none'; } return; }
+  const pre = d => st.maneuver.type === 'arrive' ? (L() === 'bm' ? 'Destinasi anda dalam ' + distTxt(d, true) : 'Your destination is in ' + distTxt(d, true)) : (L() === 'bm' ? 'Dalam ' : 'In ') + distTxt(d, true) + ', ' + instr(st).replace(/^./, c => c.toLowerCase());
+  if (dist < near) tell(j + 'n', instr(st)); else if (dist < mid) tell(j + 'm', pre(dist)); else if (dist < far) tell(j + 'f', pre(dist));
+}
+/* ---- arrow icons */
+function arrowSvg(st, col) {
+  const m = st.maneuver, ty = m.type, md = m.modifier || 'straight', S = 'fill="none" stroke="' + col + '" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"';
+  let inner;
+  if (ty === 'arrive') inner = '<path d="M24 5c-8 0-13 6-13 13 0 9 13 25 13 25s13-16 13-25c0-7-5-13-13-13z" ' + S + '/><circle cx="24" cy="18" r="4.5" fill="' + col + '"/>';
+  else if (ty === 'roundabout' || ty === 'rotary' || ty === 'roundabout turn') inner = '<circle cx="24" cy="22" r="11" ' + S + '/><path d="M24 44V33" ' + S + '/><text x="24" y="27" text-anchor="middle" font-size="14" font-weight="800" fill="' + col + '" stroke="none">' + (m.exit || '') + '</text>';
+  else if (md === 'uturn') inner = '<path d="M14 44V18a9 9 0 0 1 18 0v8M24 18l8 9 8-9" ' + S + '/>';
+  else { const a = {left: -90, right: 90, 'slight left': -45, 'slight right': 45, 'sharp left': -135, 'sharp right': 135, straight: 0}[md] || 0; inner = '<g transform="rotate(' + a + ' 24 24)"><path d="M24 44V8M11 21l13-13 13 13" ' + S + '/></g>'; }
+  return '<svg viewBox="0 0 48 48" width="100%" height="100%">' + inner + '</svg>';
+}
+function laneInfo(st) {
+  const ins = st.intersections && st.intersections[0], lanes = ins && ins.lanes; if (!lanes) return '';
+  const sym = {left: '↰', 'slight left': '↖', 'sharp left': '↲', straight: '↑', right: '↱', 'slight right': '↗', 'sharp right': '↳', uturn: '↶', none: '·'};
+  return lanes.map(l => '<span class="ln' + (l.valid ? ' ok' : '') + '">' + (l.indications || []).map(i => sym[i] || '↑').join('') + '</span>').join('');
+}
+/* ---- panel, mini-map, HUD */
+let hudOn = false;
+function topAlert(now) { let top = null; for (const [k, a] of alerts) { if (a.until < now) continue; if (!top || a.level > top.level) top = a; } return top; }
+function navTick() {
+  navUpdate(); const now = performance.now(), top = topAlert(now);
+  const np = $('navPanel'); np.classList.toggle('dim', !!(top && top.level >= 2));
+  if (NAV.active && NAV.steps.length) {
+    const j = NAV.nextJ, st = NAV.steps[j], dist = Math.max(0, NAV.stepS[j] - NAV.s), rem = Math.max(0, NAV.total - NAV.s);
+    $('nvArrow').innerHTML = arrowSvg(st, '#7CFC00'); $('nvDist').textContent = distTxt(dist, false); $('nvText').textContent = instr(st);
+    const side = (st.maneuver.modifier || ''), keep = dist < 600 && st.maneuver.type !== 'arrive' ? (/left/.test(side) ? (L() === 'bm' ? 'Ikut lorong kiri' : 'Keep in the left lane') : /right/.test(side) ? (L() === 'bm' ? 'Ikut lorong kanan' : 'Keep in the right lane') : '') : '';
+    const lanes = dist < 600 ? laneInfo(st) : '';
+    $('nvLane').innerHTML = (keep ? '<span class="keep">' + keep + '</span>' : '') + (lanes ? '<span class="lanes">' + lanes + '</span>' : '');
+    $('nvRem').textContent = (rem >= 1000 ? (rem / 1000).toFixed(1) + ' km' : Math.round(rem) + ' m') + ' to go' + (NAV.off > 40 ? ' · off route' : '');
+    window.__navView = {arrowType: st.maneuver.type + ' ' + (st.maneuver.modifier || ''), dist, text: instr(st), keep, lanes: !!lanes, off: NAV.off, rem};
+    if (CFG.miniMap && !hudOn) drawMini();
+  }
+  if (hudOn) renderHud();
+}
+function drawMini() {
+  const cv = $('mini'), c = cv.getContext('2d'), W = cv.width, H = cv.height; c.clearRect(0, 0, W, H);
+  if (GPS.lat === null || !NAV.pts.length) return;
+  const i = Math.min(NAV.lastIdx, NAV.pts.length - 2), a = NAV.pts[i], b = NAV.pts[i + 1], hd = (GPS.hdg !== null && (egoSpeed || 0) > 2) ? GPS.hdg : bearing(a[1], a[0], b[1], b[0]), h = hd * Math.PI / 180;
+  const k = 111320, cx0 = Math.cos(GPS.lat * Math.PI / 180), sc = MINI.scale, ox = W / 2, oy = H * 0.72;
+  const tp = (lon, lat) => { const dx = (lon - GPS.lon) * k * cx0, dy = (lat - GPS.lat) * k; return [ox + (dx * Math.cos(h) - dy * Math.sin(h)) * sc, oy - (dx * Math.sin(h) + dy * Math.cos(h)) * sc]; };
+  c.save(); c.beginPath(); c.arc(W / 2, H / 2, W / 2 - 1, 0, 7); c.clip(); c.fillStyle = 'rgba(14,20,28,.92)'; c.fillRect(0, 0, W, H);
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  const path = (from, to, col, w) => { c.beginPath(); let started = false; for (let q = from; q <= to; q++) { const p = tp(NAV.pts[q][0], NAV.pts[q][1]); if (!started) { c.moveTo(p[0], p[1]); started = true; } else c.lineTo(p[0], p[1]); } c.strokeStyle = col; c.lineWidth = w; c.stroke(); };
+  path(Math.max(0, i - 40), i, 'rgba(120,130,150,.7)', 5);
+  path(i, Math.min(NAV.pts.length - 1, i + 400), '#4da3ff', 6);
+  const st = NAV.steps[NAV.nextJ]; if (st) { const p = tp(st.maneuver.location[0], st.maneuver.location[1]); c.beginPath(); c.arc(p[0], p[1], 5, 0, 7); c.fillStyle = '#ffd32a'; c.fill(); c.strokeStyle = '#000'; c.lineWidth = 1.5; c.stroke(); }
+  c.fillStyle = '#7CFC00'; c.beginPath(); c.moveTo(ox, oy - 9); c.lineTo(ox + 7, oy + 8); c.lineTo(ox, oy + 4); c.lineTo(ox - 7, oy + 8); c.closePath(); c.fill(); c.restore();
+  c.strokeStyle = 'rgba(124,252,0,.6)'; c.lineWidth = 2; c.beginPath(); c.arc(W / 2, H / 2, W / 2 - 1, 0, 7); c.stroke();
+}
+const MINI = {scale: 0.2, steps: [0.1, 0.2, 0.45]};
+function renderHud() {
+  const sp = egoSpeed === null ? '--' : Math.round(egoSpeed * 3.6), lim = effLimit(), now = performance.now(), top = topAlert(now);
+  $('hSp').textContent = sp; $('hLim').textContent = lim.v || '--'; $('hLim').className = 'hLim' + (lim.v && egoSpeed !== null && egoSpeed * 3.6 > lim.v + CFG.overMargin ? ' over' : '');
+  if (NAV.active && NAV.steps.length) { const st = NAV.steps[NAV.nextJ], dist = Math.max(0, NAV.stepS[NAV.nextJ] - NAV.s); $('hArrow').innerHTML = arrowSvg(st, '#7CFC00'); $('hDist').textContent = distTxt(dist, false); $('hStreet').textContent = st.name || instr(st); }
+  else { $('hArrow').innerHTML = ''; $('hDist').textContent = ''; $('hStreet').textContent = NAV.arrived ? 'Arrived' : ''; }
+  const al = $('hAlert'); if (top && top.level >= 1) { al.textContent = top.text; al.className = top.level >= 3 ? 'l3' : top.level === 2 ? 'l2' : 'l1'; al.style.display = 'block'; } else al.style.display = 'none';
+}
+function setHud(on) { hudOn = on; $('hudLayer').style.display = on ? 'block' : 'none'; $('hudExit').style.display = on ? 'block' : 'none'; if (on) { renderHud(); try { const w = $('wrap'); (w.requestFullscreen || w.webkitRequestFullscreen || function () {}).call(w); } catch (e) {} } }
+/* ---- dialog + wiring */
+(function () {
+  $('btnNav').onclick = () => { const d = $('navDlg'); d.style.display = d.style.display === 'block' ? 'none' : 'block'; if (d.style.display === 'block') $('navQ').focus(); };
+  $('navClose').onclick = () => { $('navDlg').style.display = 'none'; };
+  $('navStop').onclick = stopNav;
+  $('btnHud').onclick = () => setHud(true); $('hudExit').onclick = () => setHud(false);
+  $('mini').onclick = () => { const a = MINI.steps, i = (a.indexOf(MINI.scale) + 1) % a.length; MINI.scale = a[i]; drawMini(); };
+  const go = async () => {
+    const q = $('navQ').value.trim(), st = $('navStatus'), res = $('navRes'); if (!q) return; st.textContent = 'Searching...'; res.innerHTML = '';
+    try {
+      const list = await geocode(q); st.textContent = list.length ? 'Tap a result to start:' : 'Nothing found. Try a fuller name, e.g. "Tanjong Malim railway station".';
+      list.forEach(x => { const b = document.createElement('button'); b.textContent = x.name; b.onclick = () => startRoute(x); res.appendChild(b); });
+    } catch (e) { st.textContent = 'Search failed: ' + e.message; }
+  };
+  $('navGo').onclick = go; $('navQ').addEventListener('keydown', e => { if (e.key === 'Enter') go(); e.stopPropagation(); });
+  setInterval(navTick, 250);
 })();
 
 /* ------------------------------------------------------------------ start-up */
@@ -521,7 +747,7 @@ $('startBtn').onclick = async () => {
     const stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: 'environment', width: {ideal: CFG.camW}, height: {ideal: Math.round(CFG.camW * 3 / 4)}, frameRate: {ideal: 30}}, audio: false});
     video.srcObject = stream; await video.play();
   } catch (e) { st.textContent = 'Camera error: ' + e.message + ' (allow camera access, use HTTPS).'; btn.disabled = false; return; }
-  startGps();
+  startGps(); initVoice();
   try { if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(() => {}); } catch (e) {}
   running = true; $('start').style.display = 'none';
   frame(performance.now());                                          // lane overlay runs immediately, even before the AI model is ready
