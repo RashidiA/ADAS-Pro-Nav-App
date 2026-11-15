@@ -71,6 +71,13 @@ Tips:
 
 ---
 
+## ⚡ Performance (smooth mode)
+
+- The AI detector now runs in a **background thread (Web Worker)**, so a slow AI pass no longer freezes the camera overlay, lane lines or HUD. If a phone/browser can't run it there, the app automatically falls back to the in-page detector.
+- Boxes **glide between detections** (motion prediction + easing) instead of jumping.
+- **Settings → Performance**: *Balanced* (default), *Smoothest* (more rest + smaller AI input on slow phones), *Max accuracy*.
+- The AI chip shows `·bg` when the background thread is active. Add `?noworker` to the URL to force the old mode for comparison.
+
 ## 🧠 How it works (short version)
 
 * **Detection:** coco-ssd (lite MobileNet v2) runs about 15 times per second on a small 320 px image.
