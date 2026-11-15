@@ -1,32 +1,54 @@
-# 🛡️ Privacy Policy: ADAS Pro Mobile Edge AI
+# 🛡️ Privacy Policy: ADAS Pro Nav (Mobile Edge AI + Navigation)
 
-This Privacy Policy outlines how the **ADAS Pro: Mobile Edge AI Vision System** handles data. As a research prototype developed by the **Asari-Rashidi Energy Model Research Group**, this application is designed with a "Privacy by Design" approach, ensuring that sensitive data remains under the user's control.
+**Last updated:** 15 November 2026
 
----
-
-### 1. Data Collection & Processing Logic
-Unlike traditional cloud-based systems, this application utilizes a **Heterogeneous Architecture** (Python/Streamlit and JavaScript/WebAssembly) to perform **Edge AI** processing. This means:
-* **Local Execution:** All visual and spatial data is processed locally on your device's hardware.
-* **No Data Transmission:** No video feeds, images, or precise location logs are transmitted to, stored on, or seen by our servers.
-
-### 2. Hardware & Sensor Access
-To provide active safety and navigation features, the app requires the following permissions:
-* **Camera Access:** Required for real-time **Lane Departure Warning (LDW)** and **Object Detection**. The camera stream is used only for "in-memory" pixel analysis and is never recorded.
-* **Location (GPS):** Required for calculating real-time vehicle speed and anchoring **AR Waze Navigation** markers.
-* **Audio (Microphone/Speech):** Used exclusively for the **Web Speech API** to deliver hands-free voice alerts (e.g., "Brake" or "Drift Left").
-
-### 3. Third-Party Integrations
-* **TensorFlow.js:** The **COCO-SSD** model used for identifying pedestrians and road signs runs entirely within your mobile browser.
-* **Streamlit Cloud:** The Python-based interface is hosted via Streamlit; however, the vision engine remains isolated within your local browser environment.
-
-### 4. User Control
-* **Permission Revocation:** You can revoke Camera, Location, or Audio access at any time through your browser's site settings.
-* **Session-Based:** All data analysis is session-based. Once the browser tab is closed, all temporary processing data is cleared.
+This policy explains how **ADAS Pro Nav** (the web app) and its companion **ADAS Pro: Mobile Edge AI Vision System** handle data. They are research and teaching prototypes by the **Asari-Rashidi Energy Model Research Group**, built with a "Privacy by Design" approach: the AI runs on your own device, there is no account, no analytics, and no developer server that receives your data.
 
 ---
 
-### 5. Contact & Metadata
-* **Project:** ADAS Pro: Mobile Edge AI Vision System
+### 1. What stays on your device
+* **Camera:** Used for lane detection and object detection (vehicles, pedestrians, animals, traffic lights/signs). Frames are analysed in memory by TensorFlow.js (COCO-SSD), in the page or in a background Web Worker on your device. Video is **never recorded, saved or uploaded**.
+* **GPS location:** Used for speed, map speed limit, over-speed warning and turn-by-turn guidance. Location is **not stored** and is not sent to the developer.
+* **Speech output:** Voice alerts and navigation prompts use your browser's built-in speech synthesis. The app does **not** record your voice or use the microphone.
+* **Settings:** Your preferences (language, thresholds, Performance mode, mini-map, etc.) are saved in your browser's local storage on your device only. Clearing site data removes them.
+
+### 2. Network requests the app makes
+The app has no backend of its own, but your browser contacts these public services:
+
+| Service | Purpose | What it receives |
+|---|---|---|
+| jsDelivr CDN (and the model host used by COCO-SSD) | Download TensorFlow.js, COCO-SSD and model weights | Standard web request data (your IP address, browser type) |
+| Overpass API (OpenStreetMap; `overpass-api.de`, `overpass.kumi.systems`) | Look up the speed limit and road name near you | Your **approximate current coordinates** (throttled queries) |
+| Nominatim (OpenStreetMap) | Search for a destination | The **text you search for** (and nearby bias, if used) |
+| OSRM public demo server (`router.project-osrm.org`) | Calculate a driving route | **Your current position and the destination coordinates** |
+
+These services are operated by third parties and have their own privacy policies and usage limits. Because they receive coordinates or search text, they may log them according to their own policies. If you do not want this, don't use route search / map speed limit (these can be switched off in Settings), and the AI vision features will still work.
+
+### 3. What we do NOT do
+* No video, image or location logs are sent to or stored by the developer.
+* No advertising, tracking cookies, analytics or user profiling.
+* No sale or sharing of data.
+
+### 4. Hosting
+The app is a static web page hosted on GitHub Pages (and, for the earlier edition, Streamlit Cloud). The hosting providers may keep ordinary server logs (such as IP address and request time) under their own policies. The vision engine runs entirely in your browser.
+
+### 5. Your control
+* Revoke **Camera** or **Location** at any time in your browser's site settings, or stop the app by closing the tab.
+* Clear saved preferences by clearing site data for the page.
+* Session-based: when the tab is closed, all temporary processing data is discarded.
+
+### 6. Safety notice
+This is an educational prototype, **not** a certified safety system. It must not replace attention to the road. Distances, speed limits and warnings are estimates and may be wrong. Please follow local traffic law and use a phone mount. Do not operate it while driving.
+
+### 7. Children
+The app is not directed at children and collects no personal information from anyone.
+
+### 8. Changes
+This policy may be updated as the app changes; the date at the top shows the latest revision.
+
+### 9. Contact & metadata
+* **Project:** ADAS Pro Nav / ADAS Pro: Mobile Edge AI Vision System
 * **Organization:** Asari-Rashidi Energy Model Research Group
-* **Lead Developer:** Asari Rashidi
-* **License:** MIT License
+* **Lead Developer:** Mohd Rashidi Asari (GitHub: RashidiA)
+* **License:** MIT License (see `LICENSE`)
+* **Map data:** © OpenStreetMap contributors (ODbL)
