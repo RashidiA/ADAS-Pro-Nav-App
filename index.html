@@ -83,6 +83,7 @@
     <label>Voice guidance <input type="checkbox" data-k="voice"></label>
     <label>Language <select data-k="lang"><option value="en">English</option><option value="bm">Bahasa Melayu</option></select></label>
     <label>Mini-map <input type="checkbox" data-k="miniMap"></label>
+    <label>Performance <select data-k="perf"><option value="balanced">Balanced</option><option value="smooth">Smoothest</option><option value="max">Max accuracy</option></select></label>
     <label>Sound <input type="checkbox" data-k="sound"></label>
     <label>Vibration <input type="checkbox" data-k="vibrate"></label>
     <label>Map speed limit <input type="checkbox" data-k="mapLimit"></label>
@@ -97,7 +98,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
 <script>
-const CFG = Object.assign({"useLane": true, "useVeh": true, "usePed": true, "useSign": true, "useAni": true, "signModelUrl": "", "sound": true, "vibrate": true, "laneThr": 0.35, "laneMinKmh": 15, "unknownMoving": true, "ttc": 2.5, "minDist": 8, "detW": 320, "detFps": 15, "camW": 640, "base": "lite_mobilenet_v2", "horizon": 0.5, "hood": 0.92, "fov": 68, "minScore": 0.45, "laneEvery": 2, "overMargin": 5, "mapLimit": true, "voice": true, "lang": "en", "miniMap": true}, (() => { try { return JSON.parse(localStorage.getItem("adaspro.cfg") || "{}"); } catch (e) { return {}; } })());
+const CFG = Object.assign({"useLane": true, "useVeh": true, "usePed": true, "useSign": true, "useAni": true, "signModelUrl": "", "sound": true, "vibrate": true, "laneThr": 0.35, "laneMinKmh": 15, "unknownMoving": true, "ttc": 2.5, "minDist": 8, "detW": 320, "detFps": 15, "camW": 640, "base": "lite_mobilenet_v2", "horizon": 0.5, "hood": 0.92, "fov": 68, "minScore": 0.45, "laneEvery": 2, "overMargin": 5, "mapLimit": true, "voice": true, "lang": "en", "miniMap": true, "perf": "balanced"}, (() => { try { return JSON.parse(localStorage.getItem("adaspro.cfg") || "{}"); } catch (e) { return {}; } })());
 const $ = id => document.getElementById(id);
 const video = $('v'), ov = $('ov'), octx = ov.getContext('2d');
 
@@ -115,6 +116,7 @@ const REALH = {person: 1.7, bicycle: 1.5, car: 1.5, motorcycle: 1.4, bus: 3.2, t
 
 /* ------------------------------------------------------------------ state */
 let model = null, running = false, audioCtx = null;
+const AI = {worker: null, ready: false, loading: false, pending: null, id: 0, backend: ''};   // AI.ready = detector runs in a background thread
 let egoSpeed = null;                              // m/s from GPS (null if unknown)
 let tracks = [], nextId = 1, lastDetT = 0, detMs = 0, fpsCount = 0, fpsVal = 0, fpsT = performance.now();
 let laneMute = false;
@@ -284,6 +286,12 @@ function handleDetections(preds, sx, sy, now) {
     for (const t of tracks) { if (used.has(t) || t.cls !== o.cls) continue; const v = iou(o, t.box); if (v > bi) { bi = v; best = t; } }
     if (!best) { best = {id: nextId++, cls: o.cls, hist: [], d: o.dist, v: 0}; tracks.push(best); }
     used.add(best); best.box = o; best.seen = now;
+    { const cy = o.y + o.h / 2;                                    // box velocity (px/s) -> boxes keep moving smoothly between AI results
+      if (best.lt) { const dt = (now - best.lt) / 1000; if (dt > 0.05 && dt < 1.5) { const k = 0.5, cl = v => Math.max(-800, Math.min(800, v));
+        best.vx = (best.vx || 0) + k * (cl((o.cx - best.lcx) / dt) - (best.vx || 0)); best.vy = (best.vy || 0) + k * (cl((cy - best.lcy) / dt) - (best.vy || 0));
+        best.vw = (best.vw || 0) + k * (cl((o.w - best.lw) / dt) - (best.vw || 0)); best.vh = (best.vh || 0) + k * (cl((o.h - best.lh) / dt) - (best.vh || 0)); } }
+      best.lt = now; best.lcx = o.cx; best.lcy = cy; best.lw = o.w; best.lh = o.h;
+      o.vx = best.vx || 0; o.vy = best.vy || 0; o.vw = best.vw || 0; o.vh = best.vh || 0; }
     if (o.dist !== null) {
       best.d = best.d === null ? o.dist : best.d + 0.5 * (o.dist - best.d);
       best.hist.push({t: now, d: best.d}); while (best.hist.length && now - best.hist[0].t > 1400) best.hist.shift();
@@ -377,18 +385,29 @@ function drawLane() {
   }
   octx.setLineDash([]);
 }
+const viewBox = new Map();                                        // track id -> eased on-screen box
+let drawT = 0;
 function drawObjs(now) {
-  if (now - lastDetT > 1200) return;
+  if (now - lastDetT > 1200) { viewBox.clear(); return; }
+  const dtF = drawT ? Math.min(0.1, (now - drawT) / 1000) : 0.033; drawT = now;
+  const ahead = Math.max(0, Math.min(0.7, (now - lastDetT) / 1000)), a = 1 - Math.exp(-dtF / 0.07);   // predict forward, then ease towards it
   octx.font = `600 ${Math.max(13, video.videoWidth * 0.026)}px system-ui`; octx.textBaseline = 'bottom';
+  const seen = new Set();
   for (const o of lastObjs) {
+    const tw_ = Math.max(4, o.w + (o.vw || 0) * ahead), th_ = Math.max(4, o.h + (o.vh || 0) * ahead), tcx = o.cx + (o.vx || 0) * ahead, tcy = o.y + o.h / 2 + (o.vy || 0) * ahead;
+    let v = viewBox.get(o.id); seen.add(o.id);
+    if (!v) { v = {cx: tcx, cy: tcy, w: tw_, h: th_}; viewBox.set(o.id, v); }
+    else { v.cx += a * (tcx - v.cx); v.cy += a * (tcy - v.cy); v.w += a * (tw_ - v.w); v.h += a * (th_ - v.h); }
+    const bx = v.cx - v.w / 2, by = v.cy - v.h / 2;
     const danger = (o.kind === 'veh' && o.inPath && ((o.ttc !== null && o.ttc < CFG.ttc) || (o.d !== null && o.d < CFG.minDist))) || ((o.kind === 'ped' || o.kind === 'ani') && o.inPath && o.d !== null && o.d < (o.kind === 'ani' ? 12 : 15));
     const col = danger ? '#ff2d2d' : o.kind === 'veh' ? '#39ff14' : o.kind === 'ped' ? '#ff4dd2' : o.kind === 'ani' ? '#ff9f1a' : '#ffd400';
-    octx.strokeStyle = col; octx.lineWidth = danger ? 5 : 3; octx.strokeRect(o.x, o.y, o.w, o.h);
+    octx.strokeStyle = col; octx.lineWidth = danger ? 5 : 3; octx.strokeRect(bx, by, v.w, v.h);
     let label = o.cls === 'traffic light' && o.light && o.light !== 'unknown' ? 'light ' + o.light : o.cls;
     if (o.d) label += ' ' + o.d.toFixed(0) + 'm'; if (o.ttc !== null && o.ttc < 6) label += ' TTC ' + o.ttc.toFixed(1) + 's';
-    const tw = octx.measureText(label).width + 8, ty = Math.max(18, o.y);
-    octx.fillStyle = col; octx.fillRect(o.x, ty - 20, tw, 20); octx.fillStyle = '#000'; octx.fillText(label, o.x + 4, ty);
+    const tw = octx.measureText(label).width + 8, ty = Math.max(18, by);
+    octx.fillStyle = col; octx.fillRect(bx, ty - 20, tw, 20); octx.fillStyle = '#000'; octx.fillText(label, bx + 4, ty);
   }
+  for (const id of viewBox.keys()) if (!seen.has(id)) viewBox.delete(id);
 }
 function frame(now) {
   if (!running) return;
@@ -402,7 +421,7 @@ function frame(now) {
     fpsCount++;
     if (now - fpsT > 1000) { fpsVal = fpsCount * 1000 / (now - fpsT); fpsCount = 0; fpsT = now;
       checkSpeed(now);
-      $('fpsChip').textContent = fpsVal.toFixed(0) + ' fps'; $('detChip').textContent = model ? 'AI ' + detMs.toFixed(0) + ' ms' : 'AI off';
+      $('fpsChip').textContent = fpsVal.toFixed(0) + ' fps'; { const t = (AI.ready || model) ? 'AI ' + detMs.toFixed(0) + ' ms' + (AI.ready ? ' ·bg' : '') : (AI.loading ? 'AI loading...' : 'AI off'); if ($('detChip').textContent !== t) $('detChip').textContent = t; }
       const lc = $('laneChip'); lc.textContent = lane.status + (lane.ready ? ' ' + (lane.offset >= 0 ? '+' : '') + lane.offset.toFixed(2) : ''); lc.style.color = lane.warn ? '#ff6b6b' : '#7CFC00'; }
   }
   if (video.requestVideoFrameCallback) video.requestVideoFrameCallback((t) => frame(t)); else requestAnimationFrame(frame);
@@ -421,23 +440,96 @@ async function customSignDetect(canvas) {
   return [];
 }
 
-/* ------------------------------------------------------------------ detection loop (separate from rendering, never overlaps itself) */
+/* ------------------------------------------------------------------ AI in a background thread (Web Worker)
+   The detector runs in its own thread, so a slow AI pass can no longer freeze the camera overlay, lane drawing or the HUD.
+   If the phone/browser cannot run WebGL inside a worker, the app silently falls back to the old in-page detector.          */
+function workerMain() {
+  let model = null;
+  self.onmessage = async (e) => {
+    const m = e.data;
+    try {
+      if (m.type === 'init') {
+        importScripts(m.tf, m.coco);
+        try { await tf.setBackend('webgl'); } catch (err) {}
+        await tf.ready();
+        const be = tf.getBackend();
+        if (be !== 'webgl') { postMessage({type: 'nogl', backend: be}); return; }       // CPU in a worker would be far too slow
+        model = await cocoSsd.load({base: m.base});
+        const bmp = await createImageBitmap(new ImageData(m.w, m.h));                    // warm-up with the same input type as real frames
+        await model.detect(bmp, 5); if (bmp.close) bmp.close();
+        postMessage({type: 'ready', backend: be});
+      } else if (m.type === 'frame') {
+        const t0 = performance.now(), preds = await model.detect(m.bitmap, 20);
+        if (m.bitmap.close) m.bitmap.close();
+        postMessage({type: 'preds', id: m.id, ms: performance.now() - t0, preds: preds.map(p => ({class: p.class, score: p.score, bbox: p.bbox}))});
+      }
+    } catch (err) { postMessage({type: 'error', id: m.id, message: String((err && err.message) || err)}); }
+  };
+}
+function startWorker() {
+  return new Promise(resolve => {
+    let done = false, to = null;
+    const fin = ok => { if (done) return; done = true; clearTimeout(to); if (!ok && AI.worker) { try { AI.worker.terminate(); } catch (e) {} AI.worker = null; } resolve(ok); };
+    to = setTimeout(() => fin(false), 90000);
+    try {
+      if (typeof Worker === 'undefined' || typeof OffscreenCanvas === 'undefined' || typeof createImageBitmap === 'undefined' || /[?&]noworker/.test(location.search)) return fin(false);
+      const w = new Worker(URL.createObjectURL(new Blob(['(' + workerMain.toString() + ')()'], {type: 'text/javascript'}))); AI.worker = w;
+      const fail = msg => { if (!AI.ready) fin(false); else if (AI.pending) { const p = AI.pending; AI.pending = null; clearTimeout(p.to); p.reject(new Error(msg)); } };
+      w.onmessage = e => {
+        const m = e.data;
+        if (m.type === 'ready') { AI.backend = m.backend; fin(true); }
+        else if (m.type === 'nogl') fin(false);
+        else if (m.type === 'preds' && AI.pending && AI.pending.id === m.id) { const p = AI.pending; AI.pending = null; clearTimeout(p.to); p.resolve(m.preds); }
+        else if (m.type === 'error') fail(m.message);
+      };
+      w.onerror = ev => fail(ev && ev.message || 'worker error');
+      const q = sel => { const el = document.querySelector(sel); return el ? el.src : ''; };
+      w.postMessage({type: 'init', tf: q('script[src*="tf.min.js"]'), coco: q('script[src*="coco-ssd"]'), base: CFG.base, w: CFG.detW, h: Math.round(CFG.detW * 3 / 4)});
+    } catch (e) { fin(false); }
+  });
+}
+function workerDetect(bmp) {
+  return new Promise((resolve, reject) => {
+    const id = ++AI.id, to = setTimeout(() => { if (AI.pending && AI.pending.id === id) { AI.pending = null; reject(new Error('AI timeout')); } }, 8000);
+    AI.pending = {id, resolve, reject, to}; AI.worker.postMessage({type: 'frame', id, bitmap: bmp}, [bmp]);
+  });
+}
+async function loadMainModel() {                                    // fallback: detector inside the page (old behaviour)
+  try {
+    try { await tf.setBackend('webgl'); } catch (e) {} await tf.ready();
+    model = await cocoSsd.load({base: CFG.base});
+    await model.detect(detCv.width ? detCv : video, 5);             // warm-up compiles the GPU shaders
+    if (CFG.signModelUrl) { try { signModel = await tf.loadGraphModel(CFG.signModelUrl); } catch (e) { console.warn('sign model failed', e); } }
+  } catch (e) { console.warn('model load failed', e); model = null; setAlert('info', 'AI model not loaded - lane only', 1, 4000); }
+}
+
+/* ------------------------------------------------------------------ detection loop (separate from rendering, never overlaps itself)
+   Pacing: "Balanced" leaves a short rest after every AI pass and lowers the AI image size on slow phones, so the GPU keeps up with the video. */
+const PACE = {max: {gap: 0, minW: 0}, balanced: {gap: 0.25, minW: 256}, smooth: {gap: 0.5, minW: 224}};
+let detW = CFG.detW, lastAdapt = 0, aiErr = 0;
 async function detectLoop() {
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   while (running) {
-    const t0 = performance.now();
-    if (model && video.readyState >= 2 && !document.hidden && (CFG.useVeh || CFG.usePed || CFG.useAni || CFG.useSign)) {
+    const t0 = performance.now(), P = PACE[CFG.perf] || PACE.balanced;
+    if ((AI.ready || model) && video.readyState >= 2 && !document.hidden && (CFG.useVeh || CFG.usePed || CFG.useAni || CFG.useSign)) {
       try {
-        const vw = video.videoWidth, vh = video.videoHeight, dw = CFG.detW, dh = Math.round(dw * vh / vw);
+        const vw = video.videoWidth, vh = video.videoHeight, dw = detW = Math.min(CFG.detW, detW), dh = Math.round(dw * vh / vw);
         if (detCv.width !== dw || detCv.height !== dh) { detCv.width = dw; detCv.height = dh; }
         dctx.drawImage(video, 0, 0, dw, dh);                         // small input = much faster SSD
-        let preds = await model.detect(detCv, 20);
-        if (signModel) preds = preds.concat(await customSignDetect(detCv));
+        let preds;
+        if (AI.ready) { preds = await workerDetect(await createImageBitmap(detCv)); aiErr = 0; }
+        else { preds = await model.detect(detCv, 20); if (signModel) preds = preds.concat(await customSignDetect(detCv)); }
         detMs += 0.3 * ((performance.now() - t0) - detMs);
-        handleDetections(preds, vw / dw, vh / dh, performance.now());
-      } catch (e) { console.warn(e); }
+        handleDetections(preds, vw / dw, vh / dh, t0);              // time-stamped when the picture was taken, so boxes can be predicted forward
+        const t = performance.now();
+        if (!P.minW) detW = CFG.detW;
+        else if (t - lastAdapt > 3000) { if (detMs > 220 && detW - 32 >= P.minW) { detW -= 32; lastAdapt = t; } else if (detMs < 110 && detW + 32 <= CFG.detW) { detW += 32; lastAdapt = t; } }
+      } catch (e) {
+        console.warn(e);
+        if (AI.ready && ++aiErr >= 3) { AI.ready = false; try { AI.worker.terminate(); } catch (e2) {} AI.worker = null; AI.loading = true; await loadMainModel(); AI.loading = false; }
+      }
     }
-    await sleep(Math.max(1, 1000 / CFG.detFps - (performance.now() - t0)));
+    await sleep(Math.max(1, 1000 / CFG.detFps - (performance.now() - t0), P.gap * detMs));
   }
 }
 
@@ -683,7 +775,7 @@ function navTick() {
   const np = $('navPanel'); np.classList.toggle('dim', !!(top && top.level >= 2));
   if (NAV.active && NAV.steps.length) {
     const j = NAV.nextJ, st = NAV.steps[j], dist = Math.max(0, NAV.stepS[j] - NAV.s), rem = Math.max(0, NAV.total - NAV.s);
-    $('nvArrow').innerHTML = arrowSvg(st, '#7CFC00'); $('nvDist').textContent = distTxt(dist, false); $('nvText').textContent = instr(st);
+    { const key = st.maneuver.type + '|' + st.maneuver.modifier + '|' + (st.maneuver.exit || ''); if (key !== NAV.arrowKey) { NAV.arrowKey = key; $('nvArrow').innerHTML = arrowSvg(st, '#7CFC00'); } } $('nvDist').textContent = distTxt(dist, false); $('nvText').textContent = instr(st);
     const side = (st.maneuver.modifier || ''), keep = dist < 600 && st.maneuver.type !== 'arrive' ? (/left/.test(side) ? (L() === 'bm' ? 'Ikut lorong kiri' : 'Keep in the left lane') : /right/.test(side) ? (L() === 'bm' ? 'Ikut lorong kanan' : 'Keep in the right lane') : '') : '';
     const lanes = dist < 600 ? laneInfo(st) : '';
     $('nvLane').innerHTML = (keep ? '<span class="keep">' + keep + '</span>' : '') + (lanes ? '<span class="lanes">' + lanes + '</span>' : '');
@@ -712,8 +804,8 @@ const MINI = {scale: 0.2, steps: [0.1, 0.2, 0.45]};
 function renderHud() {
   const sp = egoSpeed === null ? '--' : Math.round(egoSpeed * 3.6), lim = effLimit(), now = performance.now(), top = topAlert(now);
   $('hSp').textContent = sp; $('hLim').textContent = lim.v || '--'; $('hLim').className = 'hLim' + (lim.v && egoSpeed !== null && egoSpeed * 3.6 > lim.v + CFG.overMargin ? ' over' : '');
-  if (NAV.active && NAV.steps.length) { const st = NAV.steps[NAV.nextJ], dist = Math.max(0, NAV.stepS[NAV.nextJ] - NAV.s); $('hArrow').innerHTML = arrowSvg(st, '#7CFC00'); $('hDist').textContent = distTxt(dist, false); $('hStreet').textContent = st.name || instr(st); }
-  else { $('hArrow').innerHTML = ''; $('hDist').textContent = ''; $('hStreet').textContent = NAV.arrived ? 'Arrived' : ''; }
+  if (NAV.active && NAV.steps.length) { const st = NAV.steps[NAV.nextJ], dist = Math.max(0, NAV.stepS[NAV.nextJ] - NAV.s); { const key = st.maneuver.type + '|' + st.maneuver.modifier + '|' + (st.maneuver.exit || ''); if (key !== NAV.hudKey) { NAV.hudKey = key; $('hArrow').innerHTML = arrowSvg(st, '#7CFC00'); } } $('hDist').textContent = distTxt(dist, false); $('hStreet').textContent = st.name || instr(st); }
+  else { NAV.hudKey = ''; $('hArrow').innerHTML = ''; $('hDist').textContent = ''; $('hStreet').textContent = NAV.arrived ? 'Arrived' : ''; }
   const al = $('hAlert'); if (top && top.level >= 1) { al.textContent = top.text; al.className = top.level >= 3 ? 'l3' : top.level === 2 ? 'l2' : 'l1'; al.style.display = 'block'; } else al.style.display = 'none';
 }
 function setHud(on) { hudOn = on; $('hudLayer').style.display = on ? 'block' : 'none'; $('hudExit').style.display = on ? 'block' : 'none'; if (on) { renderHud(); try { const w = $('wrap'); (w.requestFullscreen || w.webkitRequestFullscreen || function () {}).call(w); } catch (e) {} } }
@@ -752,12 +844,11 @@ $('startBtn').onclick = async () => {
   running = true; $('start').style.display = 'none';
   frame(performance.now());                                          // lane overlay runs immediately, even before the AI model is ready
   if (CFG.useVeh || CFG.usePed || CFG.useAni || CFG.useSign) {
-    try {
-      try { await tf.setBackend('webgl'); } catch (e) {} await tf.ready();
-      model = await cocoSsd.load({base: CFG.base});
-      await model.detect(detCv.width ? detCv : video, 5);            // warm-up compiles the GPU shaders
-      if (CFG.signModelUrl) { try { signModel = await tf.loadGraphModel(CFG.signModelUrl); } catch (e) { console.warn('sign model failed', e); } }
-    } catch (e) { console.warn('model load failed', e); model = null; setAlert('info', 'AI model not loaded - lane only', 1, 4000); }
+    AI.loading = true;
+    let ok = false;
+    if (!CFG.signModelUrl) ok = await startWorker();                 // preferred: AI in a background thread
+    if (ok) AI.ready = true; else await loadMainModel();              // fallback: AI in the page
+    AI.loading = false;
   }
   detectLoop();
 };
